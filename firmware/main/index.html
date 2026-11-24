@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang='sr'>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width,initial-scale=1'>
+    <title>WiFi Config</title>
+    <style>
+        body { font-family: sans-serif; background: #0f172a; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; color: #e2e8f0; margin: 0; }
+        .card-config { background: rgb(255, 127, 52); padding: 2rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); width: 100%; max-width: 400px; color: #333; box-sizing: border-box; }
+        .card-config h2 { color: #333; margin-top: 0; }
+        select, input { width: 100%; padding: 10px; margin: 10px 0; background: #dddddd; border: 1px solid #686868; border-radius: 6px; box-sizing: border-box; font-size: 1rem; }
+        .btn-old { width: 100%; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; font-size: 1rem; }
+        .btn-scan { background: #5a5a5a; color: white; margin-bottom: 10px; }
+        .btn-scan:hover { background: #444; }
+        .btn-connect { background: #333; color: white; }
+        .btn-connect:hover { background: #111; }
+        #status-old { margin-top: 15px; font-weight: bold; font-size: 0.9rem; color: #333; text-align: center; }
+        .header-container { display: flex; flex-direction: row; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+        .header-container h2 { margin: 0; padding: 0; line-height: 1; }
+        button:disabled { background-color: #cccccc !important; color: #666666 !important; cursor: not-allowed; opacity: 0.6; }
+        .info-btn { width: 32px; height: 32px; border: 1px solid #333; background: #f0f0f0; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; }
+        .modal { display: none; position: fixed; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); z-index: 9999; }
+        .modal-content { background-color: rgb(255, 127, 52); margin: 15% auto; padding: 20px; border-radius: 8px; width: 280px; color: #333; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        .close-btn { float: right; font-size: 24px; font-weight: bold; cursor: pointer; line-height: 1; }
+    </style>
+</head>
+<body>
+    <div class="card-config">
+        <div class="header-container">
+            <h2>WiFi Settings</h2>
+            <button id="infoBtn" class="info-btn">
+                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+            </button>
+        </div>
+
+        <button class="btn-old btn-scan" onclick="scanWifi()">Scan for Networks</button>
+        <select id="ssid-list" onchange="checkSelection()">
+            <option value="">Click Scan to find networks...</option>
+        </select>
+        <input type="password" id="pwd" placeholder="Password">
+        <button class="btn-old btn-connect" id="connect-btn" onclick="connectWifi()">Connect</button>
+        <div id="status-old">Ready</div>
+    </div>
+
+    <!-- MODAL ZA INFORMACIJE -->
+    <div id="infoModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h3>Device Information</h3>
+            <hr style="border:0; border-top:1px solid #000; margin:10px 0;">
+            <p><strong>Connected To:</strong> <span id="info-ssid">Loading...</span></p>
+            <p><strong>ESP32 MAC:</strong> <span id="info-mac">Loading...</span></p>
+            <p><strong>AP Name:</strong> <span id="info-ap-ssid">Loading...</span></p>
+            <p><strong>AP Password:</strong> <span id="info-ap-pass">Loading...</span></p>
+        </div>
+    </div>
+
+    <script>
+        const scanBtn = document.querySelector('.btn-scan');
+        const connectBtn = document.getElementById('connect-btn');
+        const list = document.getElementById('ssid-list');
+        const statusOld = document.getElementById('status-old');
+
+        function checkSelection() {
+            const selectedOption = list.options[list.selectedIndex];
+            const pwdInput = document.getElementById('pwd');
+            if (!selectedOption) return;
+
+            if (selectedOption.dataset.isOpen === "true") {
+                pwdInput.value = ""; pwdInput.disabled = true;
+                pwdInput.placeholder = "No Password Required";
+            } else {
+                pwdInput.disabled = false; pwdInput.placeholder = "Password";
+            }
+
+            if (selectedOption.dataset.connected === "true") {
+                connectBtn.disabled = true; connectBtn.innerText = "Already Connected";
+            } else {
+                connectBtn.disabled = false; connectBtn.innerText = "Connect";
+            }
+        }
+
+        async function scanWifi() {
+            scanBtn.disabled = true;
+            statusOld.innerText = "Scanning...";
+            try {
+                const response = await fetch('/scan');
+                const networks = await response.json();
+                list.innerHTML = "";
+                networks.forEach(net => {
+                    let opt = document.createElement('option');
+                    opt.value = net.ssid;
+                    opt.dataset.connected = net.connected ? "true" : "false";
+                    opt.dataset.isOpen = net.open ? "true" : "false";
+                    let label = `${net.ssid} ${net.connected?'(Connected)':''} (${net.rssi}dBm)`;
+                    opt.innerHTML = label;
+                    list.appendChild(opt);
+                });
+                statusOld.innerText = "Scan complete.";
+                scanBtn.disabled = false;
+                checkSelection();
+            } catch (e) {
+                statusOld.innerText = "Scan failed.";
+                scanBtn.disabled = false;
+            }
+        }
+
+        async function connectWifi() {
+            const ssid = list.value;
+            const pwd = document.getElementById('pwd').value;
+            if (!ssid) return;
+            statusOld.innerText = "Connecting...";
+            const formData = new URLSearchParams();
+            formData.append('ssid', ssid);
+            formData.append('password', pwd);
+            try {
+                await fetch('/set_wifi', { method: 'POST', body: formData });
+                statusOld.innerText = "Credentials sent!";
+            } catch (e) { statusOld.innerText = "Failed to send."; }
+        }
+
+        const modal = document.getElementById("infoModal");
+        const infoBtn = document.getElementById("infoBtn");
+        const closeX = document.querySelector(".close-btn");
+
+        infoBtn.onclick = async function() {
+            modal.style.display = "block";
+            try {
+                const res = await fetch('/info');
+                const data = await res.json();
+                document.getElementById('info-ssid').innerText = data.ssid || "None";
+                document.getElementById('info-mac').innerText = data.mac || "??";
+                document.getElementById('info-ap-ssid').innerText = data.ap_ssid || "ESP32-AP";
+                document.getElementById('info-ap-pass').innerText = data.ap_pass || "None";
+            } catch (e) {}
+        }
+        closeX.onclick = () => modal.style.display = "none";
+        window.onclick = (e) => { if (e.target == modal) modal.style.display = "none"; }
+    </script>
+</body>
+</html>
