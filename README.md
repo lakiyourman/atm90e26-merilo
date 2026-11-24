@@ -19,7 +19,7 @@ Izmereni podaci se istovremeno prosleđuju na tri izlaza:
 2. **Lokalni 16×2 LCD ekran** (ST7066U kontroler) za brzi pregled IP adrese i trenutnih merenja.
 3. **Micro SD karticu** za dugotrajno lokalno logovanje podataka.
 
-4. ## 🛠️ Hardverska arhitektura
+4. ##  Hardverska arhitektura
 
 Štampana ploča (PCB) i električna šema projektovane su u **KiCad 9.0** okruženju. Donji sloj ploče izveden je kao neprekidna masena ravan (GND plane), dok su analogni i digitalni signali fizički razdvojeni radi smanjenja šuma.
 
