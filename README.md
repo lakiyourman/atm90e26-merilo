@@ -43,7 +43,7 @@ Izmereni podaci se istovremeno prosleđuju na tri izlaza:
 
 ---
 
-## 💻 Firmver (ESP-IDF)
+##  Firmver (ESP-IDF)
 
 Firmver je pisan u programskom jeziku **C** koristeći **ESP-IDF v5.x** razvojni okvir i FreeRTOS.
 
@@ -59,7 +59,7 @@ Firmver je pisan u programskom jeziku **C** koristeći **ESP-IDF v5.x** razvojni
 
 ---
 
-## 🌐 Web Dashboard i API
+##  Web Dashboard i API
 
 Prilikom prvog pokretanja, uređaj kreira otvorenu Wi-Fi pristupnu tačku **`Osiguraci_wifi_esp32`** i na LCD ekranu ispisuje svoju IP adresu (`192.168.4.1`). Kroz web interfejs korisnik može povezati uređaj na lokalnu Wi-Fi mrežu, nakon čega se nova dodeljena IP adresa prikazuje na ekranu.
 
@@ -88,7 +88,7 @@ Prilikom prvog pokretanja, uređaj kreira otvorenu Wi-Fi pristupnu tačku **`Osi
 
 ---
 
-## 🚀 Pokretanje i kompajliranje firmvera
+##  Pokretanje i kompajliranje firmvera
 
 1. Instalirati **ESP-IDF (v5.x)** i podesiti okruženje:
    ```bash
@@ -111,7 +111,7 @@ Prilikom prvog pokretanja, uređaj kreira otvorenu Wi-Fi pristupnu tačku **`Osi
 
 ---
 
-## 📊 Status projekta i uočene hardverske revizije (Rev 1.0)
+##  Status projekta i uočene hardverske revizije (Rev 1.0)
 
 ### Uspešno realizovano:
 - [x] Stabilan napon napajanja od `3.3V` dobijen direktno sa mernog ulaza.
