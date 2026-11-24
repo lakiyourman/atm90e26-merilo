@@ -1,80 +1,77 @@
 # atm90e26-merilo
 
-Uređaj, zasnovan na mernom čipu **ATM90E26** (Microchip) i mikrokontroleru ESP32, koji ima mogućnost preciznog merenja:
-• efektivne (RMS) vrednosti prostoperiodičnog napona,
-• efektivne (RMS) vrednosti prostoperiodične struje,
-• frekvencije prostoperiodičnog napona,
-• trenutne aktivne snage,
-• utrošene aktivne električne energije.
+A device based on the **ATM90E26** energy metering IC (Microchip) and an **ESP32-S2** microcontroller, capable of accurately measuring:
+- Root Mean Square (**RMS**) AC voltage,
+- Root Mean Square (**RMS**) AC current,
+- AC voltage frequency,
+- Instantaneous active power,
+- Cumulative active electrical energy consumption.
 
-**Dizajn hardvera**
-• Priključivanje ulaznog prostoperiodičnog napona na uređaj izvršeno pomoću konektora
-PJ-002AH-SMT-TR.
-• Merenje struje pomoću strujnog transformatora SCT013 (YHDC).
-• Priključivanje strujnog transformatora na uređaj pomoću konektora SJ-3523-
-SMT-TR.
+**Hardware Design**
+- AC measurement voltage input connected via a `PJ-002AH-SMT-TR` barrel jack connector.
+- Current measurement using an **SCT013** (YHDC) current transformer.
+- Current transformer connected via an `SJ-3523-SMT-TR` 3.5 mm audio jack connector.
 
-Izmereni podaci se istovremeno prosleđuju na tri izlaza:
-1. **Web Dashboard u realnom vremenu** putem WebSocket protokola (sa podrškom za praćenje više uređaja istovremeno).
-2. **Lokalni 16×2 LCD ekran** (ST7066U kontroler) za brzi pregled IP adrese i trenutnih merenja.
-3. **Micro SD karticu** za dugotrajno lokalno logovanje podataka.
+Measured data is simultaneously routed to three outputs:
+1. **Real-Time Web Dashboard** via WebSockets (supporting simultaneous monitoring of multiple devices).
+2. **Local 16×2 LCD Display** (ST7066U controller) for quick inspection of the IP address and live readings.
+3. **Micro SD Card** for long-term local data logging.
 
 <img width="564" height="794" alt="image" src="https://github.com/user-attachments/assets/16438e85-adaf-4fe2-92d5-7577e2fea84b" />
 
 <img width="377" height="545" alt="image" src="https://github.com/user-attachments/assets/66a72a88-13ed-4c03-9686-2497036e9e17" />
 
+---
 
-5. ##  Hardverska arhitektura
+## Hardware Architecture
 
 <img width="1193" height="844" alt="image" src="https://github.com/user-attachments/assets/f62dd8b1-0379-4998-b6a2-6e9c75cc9408" />
 
+The printed circuit board (PCB) and electrical schematic were designed in **KiCad 9.0**. The bottom layer is laid out as a continuous ground plane (GND plane), while analog and digital signals are physically separated to minimize noise.
 
-Štampana ploča (PCB) i električna šema projektovane su u **KiCad 9.0** okruženju. Donji sloj ploče izveden je kao neprekidna masena ravan (GND plane), dok su analogni i digitalni signali fizički razdvojeni radi smanjenja šuma.
+### Main Subsystems:
+- **Power Supply (PSU):** The device is powered directly from the measurement voltage input (`PJ-002AH-SMT-TR`), eliminating the need for an external power adapter. The input voltage passes through a varistor (`V07E11P`), a bridge rectifier (`B40R`), a capacitor bank for ripple filtering, and a high-efficiency **TPS62162DSGT** buck regulator (`3.3V` output). Using jumper `J8` (`PSU_SEL`), the internal power supply can be physically disconnected to power the board exclusively from an external programmer.
+- **Measurement Front-End:**
+  - *Voltage Channel:* A voltage divider (series chain of $120\,\text{k}\Omega$ resistors to $1\,\text{k}\Omega$) with an RC anti-aliasing filter scales the input voltage to match the ATM90E26 input range ($120\,\mu V_{RMS} \sim 600\,mV_{RMS}$).
+  - *Current Channel:* Audio jack connector (`SJ-3523-SMT-TR`) for an **SCT013 (100A:50mA)** current transformer with a burden resistor $R_{10}$ ($51\,\Omega$ / $33\,\Omega$) and a differential RC low-pass filter.
+- **Microcontroller (MCU):** **ESP32-S2-SOLO-2-N4** (single-core Xtensa LX7, low power consumption). Features a native USB-C interface with ESD protection (`ESDA5V3SC5`), transistor-based auto-reset circuitry (`Q1`, `Q2` - SS8050), and a 6-pin header (`J3`) for an external UART programmer.
+- **Metering IC:** **ATM90E26-YU** with an external $8.192\,\text{MHz}$ crystal oscillator, hardware mode configuration via jumpers `J6`/`J7` (`MMD0`, `MMD1`), and SPI communication with the MCU.
+- **Peripherals:** 16×2 character LCD (`HY1602E`) wired in 4-bit mode with a contrast potentiometer `RV1`, and a micro SD card slot (`MSD-4-A`) on the SPI bus.
 
-### Glavni podsistemi:
-* **Napajanje (PSU):** Uređaj se napaja direktno sa mernog naponskog ulaza (`PJ-002AH-SMT-TR`), čime se eliminiše potreba za dodatnim adapterom. Ulazni napon prolazi kroz varistor (`V07E11P`), mostni ispravljač (`B40R`), banku kondenzatora za filtriranje *ripple*-a i visokoefikasni *buck* regulator **TPS62162DSGT** (izlaz `3.3V`). Jumperom `J8` (`PSU_SEL`) moguće je fizički odvojiti interno napajanje i napajati ploču isključivo sa eksternog programatora.
-* **Ulazni merni stepen:**
-  * *Naponski kanal:* Naponski delilac (niz otpornika $120\,\text{k}\Omega$ prema $1\,\text{k}\Omega$) sa RC antialiasing filterom prilagođava mrežni napon opsegu ulaza ATM90E26 ($120\,\mu V_{RMS} \sim 600\,mV_{RMS}$).
-  * *Strujni kanal:* Audio džek konektor (`SJ-3523-SMT-TR`) za strujni transformator **SCT013 (100A:50mA)** sa *burden* otpornikom $R_{10}$ ($51\,\Omega$ / $33\,\Omega$) i diferencijalnim RC niskopropusnim filterom.
-* **Mikrokontroler (MCU):** **ESP32-S2-SOLO-2-N4** (jednojezgarni Xtensa LX7, niska potrošnja). Poseduje *native* USB-C interfejs sa ESD zaštitom (`ESDA5V3SC5`), tranzistorsku auto-reset logiku (`Q1`, `Q2` - SS8050) kao i dodatni 6-pinski konektor (`J3`) za eksterni UART programator.
-* **Merni čip:** **ATM90E26-YU** sa eksternim kristalom od $8.192\,\text{MHz}$, hardverskom konfiguracijom modova preko jumpera `J6`/`J7` (`MMD0`, `MMD1`) i SPI komunikacijom sa MCU-om.
-* **Periferije:** 16×2 karakter LCD (`HY1602E`) povezan u 4-bitnom modu sa potenciometrom `RV1` za kontrast, kao i slot za micro SD karticu (`MSD-4-A`) na SPI magistrali.
+### Pinout and Communication (ESP32-S2 ↔ Peripherals)
 
-### Pinout i komunikacija (ESP32-S2 ↔ Periferije)
-
-| Periferija | Interfejs | Pinovi na ESP32-S2 | Napomena |
+| Peripheral | Interface | ESP32-S2 Pins | Notes |
 | :--- | :--- | :--- | :--- |
-| **ATM90E26** | SPI2 (Mode 3, 10 kHz) | `MOSI`: GPIO15, `MISO`: GPIO16, `SCLK`: GPIO4, `CS`: GPIO18 | Redni otpornici $33\,\Omega$ na linijama |
-| **Micro SD** | SPI | Deljeni SPI bus, `CS_SD`: GPIO21 | Infrastruktura spremna u firmveru |
-| **LCD 16×2** | 4-bit paralelni | `RS`/`E`/`D4-D7`: GPIO8 – GPIO14 | Kontroler ST7066U |
-| **USB-C** | Native USB | `D-`: GPIO19, `D+`: GPIO20 | Direktno programiranje i serijski monitor |
+| **ATM90E26** | SPI2 (Mode 3, 10 kHz) | `MOSI`: GPIO15, `MISO`: GPIO16, `SCLK`: GPIO4, `CS`: GPIO18 | $33\,\Omega$ series damping resistors on lines |
+| **Micro SD** | SPI | Shared SPI bus, `CS_SD`: GPIO21 | Infrastructure ready in firmware |
+| **LCD 16×2** | 4-bit parallel | `RS`/`E`/`D4-D7`: GPIO8 – GPIO14 | ST7066U controller |
+| **USB-C** | Native USB | `D-`: GPIO19, `D+`: GPIO20 | Direct flashing and serial monitor |
 
 ---
 
-##  Firmver (ESP-IDF)
+## Firmware (ESP-IDF)
 
-Firmver je pisan u programskom jeziku **C** koristeći **ESP-IDF v5.x** razvojni okvir i FreeRTOS.
+The firmware is written in **C** using the **ESP-IDF v5.x** framework and FreeRTOS.
 
-### Struktura koda (`firmware/main/`)
-* `main.c` — Inicijalizacija NVS memorije, GPIO pinova, LCD-a, Wi-Fi podsistema, SPI magistrale, ATM90E26 čipa i pokretanje FreeRTOS taskova i HTTP servera.
-* `src/atm90e26.c` — Drajver za ATM90E26: SPI transakcije (24-bitni okviri), otključavanje i upis kalibracionih registara (`CALSTART`, `ADJSTART`), automatsko računanje kontrolnih suma (`CS1`, `CS2`) i konverzija sirovih registara u fizičke jedinice.
-* `src/wifi.c` — Upravljanje Wi-Fi konekcijom: podizanje inicijalnog Access Point-a (`Osiguraci_wifi_esp32`), skeniranje mreža (`APSTA`) i prebacivanje u `STA` mod sa *retry* i *fallback* logikom.
-* `src/server.c` — Ugrađeni HTTP server (port `80`) koji servira Web aplikaciju i REST rute (`/scan`, `/set_wifi`, `/info`, `/status`).
-* `src/socket.c` — WebSocket server (`/ws`) sa podrškom za do 4 istovremena klijenta i periodičnim emitovanjem merenja u JSON formatu svake sekunde.
-* `src/my_tasks.c` — FreeRTOS taskovi za periodično očitavanje senzora i logovanje podataka.
-* `src/lcd.c` — Drajver za 16×2 LCD ekran u 4-bitnom režimu rada.
-* `index.html` — *Single-page* Web Dashboard aplikacija ugrađena direktno u Flash memoriju mikrokontrolera.
+### Code Structure (`firmware/main/`)
+- `main.c` — Initialization of NVS flash, GPIO pins, LCD, Wi-Fi subsystem, SPI bus, ATM90E26 IC, and startup of FreeRTOS tasks and the HTTP server.
+- `src/atm90e26.c` — ATM90E26 driver: SPI transactions (24-bit frames), unlocking and writing calibration registers (`CALSTART`, `ADJSTART`), automatic checksum calculation (`CS1`, `CS2`), and conversion of raw register values into physical units.
+- `src/wifi.c` — Wi-Fi connection management: starting the initial Access Point (`Osiguraci_wifi_esp32`), network scanning (`APSTA`), and switching to `STA` mode with retry and fallback logic.
+- `src/server.c` — Embedded HTTP server (port `80`) serving the web application and REST endpoints (`/scan`, `/set_wifi`, `/info`, `/status`).
+- `src/socket.c` — WebSocket server (`/ws`) supporting up to 4 concurrent clients and broadcasting JSON measurement frames every second.
+- `src/my_tasks.c` — FreeRTOS tasks for periodic sensor polling and data logging.
+- `src/lcd.c` — 4-bit driver for the 16×2 character LCD.
+- `index.html` — Single-page Web Dashboard application embedded directly into the microcontroller flash memory.
 
 ---
 
-##  Web Dashboard i API
+## Web Dashboard and API
 
-Prilikom prvog pokretanja, uređaj kreira otvorenu Wi-Fi pristupnu tačku **`Osiguraci_wifi_esp32`** i na LCD ekranu ispisuje svoju IP adresu (`192.168.4.1`). Kroz web interfejs korisnik može povezati uređaj na lokalnu Wi-Fi mrežu, nakon čega se nova dodeljena IP adresa prikazuje na ekranu.
+On initial boot, the device creates an open Wi-Fi Access Point named **`Osiguraci_wifi_esp32`** and displays its IP address (`192.168.4.1`) on the LCD screen. Through the web interface, the user can connect the device to a local Wi-Fi network, after which the newly assigned IP address is shown on the display.
 
 <img width="1254" height="674" alt="image" src="https://github.com/user-attachments/assets/8a4b6034-e82d-433e-a132-7bc2d8dc29e7" />
 
-
-### Primer WebSocket JSON paketa (`/ws`):
+### Sample WebSocket JSON Payload (`/ws`):
 ```json
 {
   "voltage": 230.15,
@@ -87,34 +84,34 @@ Prilikom prvog pokretanja, uređaj kreira otvorenu Wi-Fi pristupnu tačku **`Osi
 }
 ```
 
-### HTTP API rute:
-| Ruta | Metod | Opis |
+### HTTP API Endpoints:
+| Route | Method | Description |
 | :--- | :---: | :--- |
-| `/` | `GET` | Vraća ugrađenu `index.html` Web aplikaciju |
-| `/scan` | `GET` | Skenira okolne Wi-Fi mreže i vraća JSON listu sa RSSI vrednostima |
-| `/set_wifi` | `POST` | Prima `ssid` i `password` i pokreće povezivanje na lokalnu mrežu |
-| `/info` | `GET` | Vraća trenutni SSID, MAC adresu i AP konfiguraciju |
-| `/status` | `GET` | Vraća status Wi-Fi konekcije (`Idle` / `Connecting` / `Success` / `Failed`) |
-| `/ws` | `GET` | WebSocket endpoint za prijem telemetrije u realnom vremenu |
+| `/` | `GET` | Serves the embedded `index.html` Web Dashboard |
+| `/scan` | `GET` | Scans nearby Wi-Fi networks and returns a JSON array with RSSI values |
+| `/set_wifi` | `POST` | Accepts `ssid` and `password` and initiates connection to the local network |
+| `/info` | `GET` | Returns current SSID, MAC address, and AP configuration |
+| `/status` | `GET` | Returns Wi-Fi connection status (`Idle` / `Connecting` / `Success` / `Failed`) |
+| `/ws` | `GET` | WebSocket endpoint for real-time telemetry streaming |
 
 ---
 
-##  Pokretanje i kompajliranje firmvera
+## Building and Flashing the Firmware
 
-1. Instalirati **ESP-IDF (v5.x)** i podesiti okruženje:
+1. Install **ESP-IDF (v5.x)** and set up the environment:
    ```bash
    . $HOME/esp/esp-idf/export.sh
    ```
-2. Klonirati repozitorijum i ući u direktorijum firmvera:
+2. Clone the repository and navigate to the firmware directory:
    ```bash
-   git clone [https://github.com/vas-nalog/OhmSprint-ATM90E26.git](https://github.com/vas-nalog/OhmSprint-ATM90E26.git)
-   cd OhmSprint-ATM90E26/firmware
+   git clone [https://github.com/your-username/atm90e26-merilo.git](https://github.com/your-username/atm90e26-merilo.git)
+   cd atm90e26-merilo/firmware
    ```
-3. Podesiti ciljni čip na `esp32s2`:
+3. Set the target chip to `esp32s2`:
    ```bash
    idf.py set-target esp32s2
    ```
-4. Kompajlirati i flešovati na ploču (putem USB-C ili eksternog programatora):
+4. Build and flash the firmware to the board (via USB-C or an external programmer):
    ```bash
    idf.py build
    idf.py -p /dev/ttyACM0 flash monitor
@@ -122,17 +119,17 @@ Prilikom prvog pokretanja, uređaj kreira otvorenu Wi-Fi pristupnu tačku **`Osi
 
 ---
 
-##  Status projekta i uočene hardverske revizije (Rev 1.0)
+## Project Status and Hardware Revisions (Rev 1.0)
 
-### Uspešno realizovano:
-- [x] Stabilan napon napajanja od `3.3V` dobijen direktno sa mernog ulaza.
-- [x] Uspešno programiranje ESP32-S2 preko *native* USB-a i eksternog programatora.
-- [x] Kompletna WebSocket telemetrija, Wi-Fi provisioning i multi-device Web Dashboard.
-- [x] Ispis statusa i IP adrese na 16×2 LCD ekranu.
-- [x] Testirano čitanje i kalibracija ATM90E26 na prototipskoj postavci.
+### Completed Milestones:
+- [x] Stable `3.3V` power rail derived directly from the measurement voltage input.
+- [x] Successful flashing of the ESP32-S2 via native USB and external programmer.
+- [x] Full WebSocket telemetry, Wi-Fi provisioning, and multi-device Web Dashboard.
+- [x] Status and IP address readout on the 16×2 LCD screen.
+- [x] Verified register reading and calibration of the ATM90E26 on a prototype setup.
 
-### Uočeni hardverski bagovi na Rev 1.0 ploči (za Rev 1.1):
-1. **Mostni ispravljač (`B40R`):** Pogrešno povezani pinovi na footprint-u na prvoj reviziji PCB-a (ispravljeno ručnim prevezivanjem na prototipu).
-2. **Pozadinsko osvetljenje LCD-a:** Nedostaju veze ka anodi i katodi (`LED+` / `LED-`) za pozadinsko osvetljenje ekrana.
-3. **Kristalni oscilator (`8.192 MHz`):** Potrebno je dodati opteretne kondenzatore od $\sim 22\,\text{pF}$ ka masi za stabilan rad oscilatora ATM90E26 čipa.
-4. **SPI `MOSI` linija (u toku debagovanja):** Osciloskopskim merenjem utvrđeno je da su `SCLK`, `CS` i `MISO` signali uredni, dok `MOSI` signal ima DC ofset od $\sim 1\,\text{V}$ i nepredvidivo ponašanje na trenutnoj ploči, što onemogućava stabilnu inicijalizaciju registara na sastavljenom PCB-u.
+### Identified Hardware Issues on Rev 1.0 PCB (for Rev 1.1):
+1. **Bridge Rectifier (`B40R`):** Incorrect pin mapping on the PCB footprint in the first revision (patched manually on the prototype).
+2. **LCD Backlight:** Missing PCB traces to the anode and cathode (`LED+` / `LED-`) for the display backlight.
+3. **Crystal Oscillator (`8.192 MHz`):** Load capacitors ($\sim 22\,\text{pF}$ to GND) need to be added for reliable oscillation on the ATM90E26 clock pins.
+4. **SPI `MOSI` Line (Under Investigation):** Oscilloscope measurements confirmed clean `SCLK`, `CS`, and `MISO` waveforms, whereas the `MOSI` line exhibits a $\sim 1\,\text{V}$ DC offset and erratic behavior on the assembled board, preventing reliable register initialization on the PCB.
