@@ -19,7 +19,15 @@ Izmereni podaci se istovremeno prosleđuju na tri izlaza:
 2. **Lokalni 16×2 LCD ekran** (ST7066U kontroler) za brzi pregled IP adrese i trenutnih merenja.
 3. **Micro SD karticu** za dugotrajno lokalno logovanje podataka.
 
-4. ##  Hardverska arhitektura
+<img width="564" height="794" alt="image" src="https://github.com/user-attachments/assets/16438e85-adaf-4fe2-92d5-7577e2fea84b" />
+
+<img width="377" height="545" alt="image" src="https://github.com/user-attachments/assets/66a72a88-13ed-4c03-9686-2497036e9e17" />
+
+
+5. ##  Hardverska arhitektura
+
+<img width="1193" height="844" alt="image" src="https://github.com/user-attachments/assets/f62dd8b1-0379-4998-b6a2-6e9c75cc9408" />
+
 
 Štampana ploča (PCB) i električna šema projektovane su u **KiCad 9.0** okruženju. Donji sloj ploče izveden je kao neprekidna masena ravan (GND plane), dok su analogni i digitalni signali fizički razdvojeni radi smanjenja šuma.
 
@@ -62,6 +70,9 @@ Firmver je pisan u programskom jeziku **C** koristeći **ESP-IDF v5.x** razvojni
 ##  Web Dashboard i API
 
 Prilikom prvog pokretanja, uređaj kreira otvorenu Wi-Fi pristupnu tačku **`Osiguraci_wifi_esp32`** i na LCD ekranu ispisuje svoju IP adresu (`192.168.4.1`). Kroz web interfejs korisnik može povezati uređaj na lokalnu Wi-Fi mrežu, nakon čega se nova dodeljena IP adresa prikazuje na ekranu.
+
+<img width="1254" height="674" alt="image" src="https://github.com/user-attachments/assets/8a4b6034-e82d-433e-a132-7bc2d8dc29e7" />
+
 
 ### Primer WebSocket JSON paketa (`/ws`):
 ```json
